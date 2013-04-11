@@ -36,6 +36,7 @@ extern "C"
 #define G15_DEVICE_G510 32
 #define G15_DEVICE_G110 64
 #define G15_DEVICE_COLOUR 128
+#define G15_STORAGE 256
 
 #define G15_KEY_READ_LENGTH 9
 #define G13_KEY_READ_LENGTH 8
@@ -75,7 +76,8 @@ struct libg15_devices_t {
     G15_ERROR_READING_USB_DEVICE,
     G15_ERROR_TRY_AGAIN,
     G15_ERROR_WRITING_BUFFER,
-    G15_ERROR_UNSUPPORTED
+    G15_ERROR_UNSUPPORTED,
+    G15_ERROR_WRITING_PROFILE,
   };
   
   enum
@@ -88,6 +90,11 @@ struct libg15_devices_t {
   enum
   {
     G15_BUFFER_LEN = 0x03e0
+  };
+
+  enum
+  {
+    G15_PROFILE_LEN = 992
   };
   
   enum
@@ -167,6 +174,8 @@ struct libg15_devices_t {
     G15_KEY_MUTE = 1 << 4,
     G15_KEY_RAISE_VOLUME = 1 << 5,
     G15_KEY_LOWER_VOLUME = 1 << 6,
+    G15_KEY_MUTE_OUTPUT = 1 << 7,
+    G15_KEY_MUTE_INPUT = 1 << 8,
   };
 
 
