@@ -41,7 +41,7 @@ static pthread_mutex_t libusb_mutex;
 static int light_state = 0;
 static int joystick_x = 0;
 static int joystick_y = 0;
-static unsigned int last_pressed_keys = 0;
+static int last_pressed_keys = -1;
 
 /* to add a new device, simply create a new DEVICE() in this list */
 /* Fields are: "Name",VendorID,ProductID,Capabilities */
@@ -356,7 +356,7 @@ int setupLibG15(unsigned int vendorId, unsigned int productId, unsigned int init
 #endif
 
     g15NumberOfConnectedDevices();
-    last_pressed_keys = 0;
+    last_pressed_keys = -1;
     keyboard_device = findAndOpen(vendorId, productId);
     if (!keyboard_device)
         return G15_ERROR_OPENING_USB_DEVICE;
@@ -1297,10 +1297,10 @@ static void processKeyEvent2Byte(unsigned int *pressed_keys, unsigned char *buff
 
 int getPressedKeys(unsigned int *pressed_keys, unsigned int timeout)
 {
-	if(last_pressed_keys > 0) {
+	if(last_pressed_keys > -1) {
 		/* if we buffered keypresses because there was a 'extended' event */
 		*pressed_keys = last_pressed_keys;
-		last_pressed_keys = 0;
+		last_pressed_keys = -1;
         return G15_NO_ERROR;
 	}
 
@@ -1327,7 +1327,7 @@ int getPressedKeys(unsigned int *pressed_keys, unsigned int timeout)
 #endif
 
     if(ret > 0 && libg15_debugging_enabled == G15_LOG_INFO) {
-    	g15_log(stderr,G15_LOG_INFO,"rl: %d Ret: %x, Buf[0]: %x, %x, %x\n",read_length, ret, buffer[0]);
+    	g15_log(stderr,G15_LOG_INFO,"rl: %d Ret: %x, xBuf[0]: %x\n",read_length, ret, buffer[0]);
     	int i;
     	for(i = 0 ; i < ret; i++) {
         	g15_log(stderr,G15_LOG_INFO,"    %x\n", buffer[i]);
