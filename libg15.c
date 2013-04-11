@@ -17,7 +17,7 @@
 
     (c) 2006-2007 The G15tools Project - g15tools.sf.net
 
-    $Revision$ -  $Date$ $Author$
+    $Revision: 324 $ -  $Date: 2011-02-24 00:13:57 +0000 (Thu, 24 Feb 2011) $ $Author: SteelSide $
 */
 
 #include <pthread.h>
@@ -38,6 +38,10 @@ static int shared_device = 0;
 static int g15_keys_endpoint = 0;
 static int g15_lcd_endpoint = 0;
 static pthread_mutex_t libusb_mutex;
+static int light_state = 0;
+static int joystick_x = 0;
+static int joystick_y = 0;
+static unsigned int last_pressed_keys = 0;
 
 /* to add a new device, simply create a new DEVICE() in this list */
 /* Fields are: "Name",VendorID,ProductID,Capabilities */
@@ -47,10 +51,10 @@ const libg15_devices_t g15_devices[] = {
     DEVICE("Logitech Z-10",0x46d,0x0a07,G15_LCD|G15_KEYS|G15_DEVICE_IS_SHARED),
     DEVICE("Logitech G15 v2",0x46d,0xc227,G15_LCD|G15_KEYS|G15_DEVICE_5BYTE_RETURN),
     DEVICE("Logitech Gamepanel",0x46d,0xc251,G15_LCD|G15_KEYS|G15_DEVICE_IS_SHARED),
-    DEVICE("Logitech G13",0x46d,0xc21c,G15_LCD|G15_KEYS|G15_DEVICE_G13),
-    DEVICE("Logitech G110",0x46d,0xc22b,G15_KEYS),
-    DEVICE("Logitech G510",0x46d,0xc22d,G15_LCD|G15_KEYS|G15_DEVICE_IS_SHARED|G15_DEVICE_G510), /* without audio activated */
-    DEVICE("Logitech G510",0x46d,0xc22e,G15_LCD|G15_KEYS|G15_DEVICE_IS_SHARED|G15_DEVICE_G510), /* with audio activated */
+    DEVICE("Logitech G13",0x46d,0xc21c,G15_LCD|G15_KEYS|G15_DEVICE_G13|G15_DEVICE_COLOUR),
+    DEVICE("Logitech G110",0x46d,0xc22b,G15_KEYS|G15_DEVICE_G110|G15_DEVICE_COLOUR),
+    DEVICE("Logitech G510",0x46d,0xc22d,G15_LCD|G15_KEYS|G15_DEVICE_IS_SHARED|G15_DEVICE_G510|G15_DEVICE_COLOUR), /* without audio activated */
+    DEVICE("Logitech G510",0x46d,0xc22e,G15_LCD|G15_KEYS|G15_DEVICE_IS_SHARED|G15_DEVICE_G510|G15_DEVICE_COLOUR), /* with audio activated */
     DEVICE(NULL,0,0,0)
 };
 
@@ -60,6 +64,21 @@ int g15DeviceCapabilities() {
         return g15_devices[found_devicetype].caps;
     else
         return -1;
+}
+
+/* get the current state of the backlight */
+int getBacklightState() {
+	return light_state;
+}
+
+/* get the current joystick X position  */
+int getJoystickX() {
+	return joystick_x;
+}
+
+/* get the current joystick X position  */
+int getJoystickY() {
+	return joystick_y;
 }
 
 
@@ -106,6 +125,7 @@ int g15NumberOfConnectedDevices() {
 
 static int initLibUsb()
 {
+    g15_log(stderr,G15_LOG_INFO,"Initialising USB\n");
     usb_init();
 
   /**
@@ -269,18 +289,28 @@ static usb_dev_handle * findAndOpenDevice(libg15_devices_t handled_device, int d
     return 0;
 }
 
-
-static usb_dev_handle * findAndOpenG15() {
+static usb_dev_handle * findAndOpen(unsigned int vendorid, unsigned int productid) {
     int i;
     for (i=0; g15_devices[i].name !=NULL  ;i++){
         g15_log(stderr,G15_LOG_INFO,"Trying to find %s\n",g15_devices[i].name);
-        if(keyboard_device = findAndOpenDevice(g15_devices[i],i)){
-            break;
+        if( ( vendorid == 0 || g15_devices[i].vendorid == vendorid ) &
+        	( productid == 0 || g15_devices[i].productid == productid ) ) {
+			if(keyboard_device = findAndOpenDevice(g15_devices[i],i)){
+				break;
+			}
+			else {
+				g15_log(stderr,G15_LOG_INFO,"%s not found\n",g15_devices[i].name);
+			}
         }
-        else
-            g15_log(stderr,G15_LOG_INFO,"%s not found\n",g15_devices[i].name);
+        else {
+			g15_log(stderr,G15_LOG_INFO,"%s skipped\n",g15_devices[i].name);
+        }
     }
     return keyboard_device;
+}
+
+static usb_dev_handle * findAndOpenG15() {
+	return findAndOpen(0, 0);
 }
 
 
@@ -304,13 +334,21 @@ int re_initLibG15()
     return G15_NO_ERROR;
 }
 
-int initLibG15()
+int setupLibG15(unsigned int vendorId, unsigned int productId, unsigned int init_usb)
 {
-    int retval = G15_NO_ERROR;
-    retval = initLibUsb();
-    if (retval)
-        return retval;
+	if(init_usb) {
+		int retval = initLibUsb();
+		if (retval)
+			return retval;
+	}
+	else {
+	    g15_log(stderr,G15_LOG_INFO,"Skipping libusb initialise\n");
+	}
 
+
+    usb_init();
+    usb_find_busses();
+    usb_find_devices();
     g15_log(stderr,G15_LOG_INFO,"%s\n",PACKAGE_STRING);
 
 #ifdef SUN_LIBUSB
@@ -318,13 +356,25 @@ int initLibG15()
 #endif
 
     g15NumberOfConnectedDevices();
-
-    keyboard_device = findAndOpenG15();
+    last_pressed_keys = 0;
+    keyboard_device = findAndOpen(vendorId, productId);
     if (!keyboard_device)
         return G15_ERROR_OPENING_USB_DEVICE;
 
     pthread_mutex_init(&libusb_mutex, NULL);
-    return retval;
+
+    if (g15DeviceCapabilities()&G15_DEVICE_G13){
+    	unsigned int *pk;
+    	getPressedKeys(pk, 2000);
+	    g15_log(stderr,G15_LOG_INFO,"Initial keypress %d\n", pk);
+    }
+
+    return G15_NO_ERROR;
+}
+
+int initLibG15()
+{
+	return setupLibG15(0, 0, 1);
 }
 
 /* reset the keyboard, returning it to a known state */
@@ -542,17 +592,24 @@ int setLCDContrast(unsigned int level)
 int setLEDs(unsigned int leds)
 {
     int retval = 0;
-    unsigned char m_led_buf[4] = { 2, 4, 0, 0 };
-    m_led_buf[2] = ~(unsigned char)leds;
-
-    if(g15DeviceCapabilities()&G15_DEVICE_G510)
-        setG510LEDColor(0, 255, 0);
 
     if(shared_device>0)
         return G15_ERROR_UNSUPPORTED;
 
     pthread_mutex_lock(&libusb_mutex);
-    retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x302, 0, (char*)m_led_buf, 4, 10000);
+
+    if (g15DeviceCapabilities()&G15_DEVICE_G13){
+        unsigned char m_led_buf[5] = { 5, (unsigned char)leds, 0, 0, 0 };
+    	retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x305, 0, (char*)m_led_buf, 5, 10000);
+    }
+    else if (g15DeviceCapabilities()&G15_DEVICE_G110){
+        unsigned char m_led_buf[2] = { 5, (unsigned char)leds };
+    	retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x305, 1, (char*)m_led_buf, 2, 10000);
+    }
+    else {
+        unsigned char m_led_buf[4] = { 2, 4, ~(unsigned char)leds, 0 };
+    	retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x302, 0, (char*)m_led_buf, 4, 10000);
+    }
     pthread_mutex_unlock(&libusb_mutex);
     return retval;
 }
@@ -562,7 +619,7 @@ int setLCDBrightness(unsigned int level)
     int retval = 0;
     unsigned char usb_data[] = { 2, 2, 0, 0 };
 
-    if(shared_device>0)
+    if(shared_device>0 || ( g15DeviceCapabilities() & G15_DEVICE_COLOUR ))
         return G15_ERROR_UNSUPPORTED;
 
     switch(level)
@@ -588,7 +645,7 @@ int setKBBrightness(unsigned int level)
     int retval = 0;
     unsigned char usb_data[] = { 2, 1, 0, 0 };
 
-    if(shared_device>0)
+    if(shared_device>0 || ( g15DeviceCapabilities() & G15_DEVICE_COLOUR ) )
         return G15_ERROR_UNSUPPORTED;
 
     switch(level)
@@ -610,6 +667,9 @@ int setKBBrightness(unsigned int level)
 
 int setG510LEDColor(unsigned char r, unsigned char g, unsigned char b)
 {
+    if((!g15DeviceCapabilities() & G15_DEVICE_COLOUR))
+        return G15_ERROR_UNSUPPORTED;
+
     int retval = 0;
     unsigned char usb_data[] = { 4, 0, 0, 0 };
 
@@ -618,7 +678,33 @@ int setG510LEDColor(unsigned char r, unsigned char g, unsigned char b)
     usb_data[3] = b;
 
     pthread_mutex_lock(&libusb_mutex);
-    retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x305, 1, (char*)usb_data, 4, 10000);
+
+    if (g15DeviceCapabilities()&G15_DEVICE_G110){
+	    usb_data[0] = 8;
+	   // If the intensities are the same, "colour" is 0x80
+	    if ( r == b ) {
+	    	usb_data[1] = 0x80;
+	    	usb_data[2] = b>>4;
+	    }
+	   // If the blue value is higher
+	    else if ( b > r ) {
+	    	usb_data[1] = 0xff - ( 0x80 * r ) / b;
+	    	usb_data[2] = b>>4;
+	    }
+	   // If the red value is higher
+	    else {
+	    	usb_data[1] = 0x00 - ( 0x80 * b ) / r;
+	    	usb_data[2] = r>>4;
+	    }
+    	retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x307, 1, (char*)usb_data, 4, 10000);
+    }
+    else if (g15DeviceCapabilities()&G15_DEVICE_G13){
+	    usb_data[0] = 5;
+    	retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x307, 0, (char*)usb_data, 4, 10000);
+    }
+    else {
+    	retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x305, 1, (char*)usb_data, 4, 10000);
+    }
     pthread_mutex_unlock(&libusb_mutex);
     return retval;
 }
@@ -643,9 +729,7 @@ static void processKeyEventG13(unsigned int *pressed_keys, unsigned char *buffer
 
     *pressed_keys = 0;
 
-    g15_log(stderr,G15_LOG_WARN,"Keyboard G13: %x, %x, %x, %x, %x, %x, %x, %x, %x\n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7],buffer[8]);
-
-    if (buffer[0] == 0x25)
+    if (buffer[0] == 0x01)
     {
         if (buffer[3]&0x01)
       *pressed_keys |= G15_KEY_G1;
@@ -684,14 +768,6 @@ static void processKeyEventG13(unsigned int *pressed_keys, unsigned char *buffer
       *pressed_keys |= G15_KEY_G17;
         if (buffer[5]&0x02)
       *pressed_keys |= G15_KEY_G18;
-        if (buffer[5]&0x04)
-      *pressed_keys |= G15_KEY_G19;
-        if (buffer[5]&0x08)
-      *pressed_keys |= G15_KEY_G20;
-        if (buffer[5]&0x10)
-      *pressed_keys |= G15_KEY_G21;
-        if (buffer[5]&0x20)
-      *pressed_keys |= G15_KEY_G22;
         if (buffer[5]&0x80)
       *pressed_keys |= G15_KEY_LIGHT;
 
@@ -715,16 +791,58 @@ static void processKeyEventG13(unsigned int *pressed_keys, unsigned char *buffer
         if (buffer[7]&0x01)
       *pressed_keys |= G15_KEY_MR;
 
-      /*
-        if (buffer[7]&0x02)
-      *pressed_keys |= G15_KEY_JOYBL;
-        if (buffer[7]&0x04)
-      *pressed_keys |= G15_KEY_JOYBD;
-        if (buffer[7]&0x08)
-      *pressed_keys |= G15_KEY_JOYBS;
-      */
     }
 
+}
+
+static void processKeyEventG13Extended(unsigned int *pressed_keys, unsigned char *buffer)
+{
+    int i;
+
+    *pressed_keys = 0;
+
+    if (buffer[0] == 0x01)
+    {
+
+		if (buffer[5]&0x04) {
+		*pressed_keys |= G15_KEY_G19;
+		*pressed_keys |= G15_EXTENDED_KEY;
+		}
+		if (buffer[5]&0x08) {
+		*pressed_keys |= G15_KEY_G20;
+		*pressed_keys |= G15_EXTENDED_KEY;
+		}
+		if (buffer[5]&0x10) {
+		*pressed_keys |= G15_KEY_G21;
+		*pressed_keys |= G15_EXTENDED_KEY;
+		}
+		if (buffer[5]&0x20) {
+		*pressed_keys |= G15_KEY_G22;
+		*pressed_keys |= G15_EXTENDED_KEY;
+		}
+		if (buffer[7]&0x02) {
+		*pressed_keys |= G15_KEY_JOYBL;
+		*pressed_keys |= G15_EXTENDED_KEY;
+		}
+		if (buffer[7]&0x04) {
+		*pressed_keys |= G15_KEY_JOYBD;
+		*pressed_keys |= G15_EXTENDED_KEY;
+		}
+		if (buffer[7]&0x08) {
+		*pressed_keys |= G15_KEY_JOYBS;
+		*pressed_keys |= G15_EXTENDED_KEY;
+		}
+    }
+
+	  // Bytes 1 and 2 are the joystick positions
+	  int jx = buffer[1];
+	  int jy = buffer[2];
+	  if(jx != joystick_x || jy != joystick_y) {
+		  joystick_x = jx;
+		  joystick_y = jy;
+		  *pressed_keys |= G15_JOY;
+		  *pressed_keys |= G15_EXTENDED_KEY;
+	  }
 }
 
 static void processKeyEvent9Byte(unsigned int *pressed_keys, unsigned char *buffer)
@@ -1029,27 +1147,135 @@ static void processKeyEvent4Byte(unsigned int *pressed_keys, unsigned char *buff
 	}
 }
 
+
+static void processKeyEvent2Byte(unsigned int *pressed_keys, unsigned char *buffer)
+{
+	*pressed_keys = 0;
+
+    g15_log(stderr,G15_LOG_WARN,"Keyboard: %x, %x\n", buffer[0], buffer[1]);
+
+    if (buffer[0] == 0x02)
+    {
+        // XF86AudioPlay
+        if (buffer[1] & 0x08) {
+            *pressed_keys |= G15_KEY_PLAY;
+			*pressed_keys |= G15_EXTENDED_KEY;
+        }
+
+        // XF86AudioStop
+        if (buffer[1] & 0x04) {
+            *pressed_keys |= G15_KEY_STOP;
+			*pressed_keys |= G15_EXTENDED_KEY;
+        }
+
+        // XF86AudioPrev
+        if (buffer[1] & 0x02) {
+            *pressed_keys |= G15_KEY_PREV;
+			*pressed_keys |= G15_EXTENDED_KEY;
+        }
+
+        // XF86AudioNext
+        if (buffer[1] & 0x01) {
+            *pressed_keys |= G15_KEY_NEXT;
+			*pressed_keys |= G15_EXTENDED_KEY;
+        }
+
+        // XF86AudioMute
+        if (buffer[1] & 0x16) {
+            *pressed_keys |= G15_KEY_MUTE;
+			*pressed_keys |= G15_EXTENDED_KEY;
+        }
+
+        // XF86AudioRaiseVolume
+        if (buffer[1] & 0x32) {
+            *pressed_keys |= G15_KEY_RAISE_VOLUME;
+			*pressed_keys |= G15_EXTENDED_KEY;
+        }
+
+        // XF86AudioLowerVolume
+        if (buffer[1] & 0x64) {
+            *pressed_keys |= G15_KEY_LOWER_VOLUME;
+			*pressed_keys |= G15_EXTENDED_KEY;
+        }
+    }
+}
+
+
 int getPressedKeys(unsigned int *pressed_keys, unsigned int timeout)
 {
-    unsigned char buffer[G15_KEY_READ_LENGTH];
-    int ret = 0;
-    int caps = 0;
+	if(last_pressed_keys > 0) {
+		/* if we buffered keypresses because there was a joystick event */
+		*pressed_keys = last_pressed_keys;
+		last_pressed_keys = 0;
+        return G15_NO_ERROR;
+	}
 
-#ifdef LIBUSB_BLOCKS
-    ret = usb_interrupt_read(keyboard_device, g15_keys_endpoint, (char*)buffer, G15_KEY_READ_LENGTH, timeout);
-#else
-    pthread_mutex_lock(&libusb_mutex);
-    ret = usb_interrupt_read(keyboard_device, g15_keys_endpoint, (char*)buffer, G15_KEY_READ_LENGTH, timeout);
-    pthread_mutex_unlock(&libusb_mutex);
-#endif
-    if(ret>0) {
-      if(buffer[0] == 1)
-        return G15_ERROR_TRY_AGAIN;
+    unsigned char buffer[G15_KEY_READ_LENGTH];
+    int x = 0;
+    int ret = 0;
+    int caps = g15DeviceCapabilities();
+    int read_length;
+
+    if(caps & G15_DEVICE_G13) {
+    	read_length = G13_KEY_READ_LENGTH;
+    }
+    else {
+    	read_length = G15_KEY_READ_LENGTH;
+    }
+    for( x = 0 ; x < read_length; x++) {
+        buffer[x] = 0;
     }
 
-    caps = g15DeviceCapabilities();
-    if((caps & G15_DEVICE_G13) && buffer[0]==0x25){
-      processKeyEventG13(pressed_keys, buffer);
+#ifdef LIBUSB_BLOCKS
+    ret = usb_interrupt_read(keyboard_device, g15_keys_endpoint, (char*)buffer, read_length, timeout);
+#else
+    pthread_mutex_lock(&libusb_mutex);
+    ret = usb_interrupt_read(keyboard_device, g15_keys_endpoint, (char*)buffer, read_length , timeout);
+    pthread_mutex_unlock(&libusb_mutex);
+#endif
+
+	if(caps & G15_DEVICE_G13){
+		// G13 sometimes returns -110, but has filled the buffer with keydata
+		if(ret < 1 && buffer[0] == 1) {
+			ret = 0;
+		}
+	}
+	else if(ret > 0 && buffer[0] == 1) {
+		return G15_ERROR_TRY_AGAIN;
+	}
+
+
+    if((caps & G15_DEVICE_G13) && buffer[0]==0x01){
+
+      // The top bit of the the 6th byte indicates whether the backlight is on or off
+      // Get the state of it, then mask out the bit
+      if(buffer[5] & 0x80) {
+    	  if(light_state == 0) {
+    	      light_state = 1;
+    	  }
+    	  buffer[5] &= ~(0x80);
+      }
+      else {
+    	  if(light_state == 1) {
+    	      light_state = 0;
+    	  }
+      }
+
+      // The top bit of the 8th byte flaps about, no idea why so we just clear it
+	  buffer[7] &= ~(0x80);
+	  processKeyEventG13(pressed_keys, buffer);
+
+	  /* Handle the "extended" keys. If one if pressed, then store what
+	   * non-extended keys were pressed for the next call
+	   */
+	  unsigned int pressed_ext_keys = 0;
+	  processKeyEventG13Extended(&pressed_ext_keys, buffer);
+	  if(pressed_ext_keys > 0) {
+		  last_pressed_keys = *pressed_keys;
+		  *pressed_keys = pressed_ext_keys;
+		  return G15_NO_ERROR;
+	  }
+
       return G15_NO_ERROR;
     }
 
@@ -1063,6 +1289,11 @@ int getPressedKeys(unsigned int *pressed_keys, unsigned int timeout)
       case 9:
           processKeyEvent9Byte(pressed_keys, buffer);
           return G15_NO_ERROR;
+      case 2:
+          if(caps & G15_DEVICE_G510){
+         	  processKeyEvent2Byte(pressed_keys, buffer);
+         	  return G15_NO_ERROR;
+          } // Deliberate fallthrough
       default:
           return handle_usb_errors("Keyboard Read", ret); /* allow the app to deal with errors */
     }

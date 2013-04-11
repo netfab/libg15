@@ -17,7 +17,7 @@
     
     (c) 2006 - 2007 The G15tools Project - g15tools.sf.net
     
-    $Revision$ -  $Date$ $Author$
+    $Revision: 324 $ -  $Date: 2011-02-24 00:13:57 +0000 (Thu, 24 Feb 2011) $ $Author: SteelSide $
 */
 
 #ifndef _LIBG15_H_
@@ -34,8 +34,11 @@ extern "C"
 #define G15_DEVICE_5BYTE_RETURN 8
 #define G15_DEVICE_G13 16
 #define G15_DEVICE_G510 32
+#define G15_DEVICE_G110 64
+#define G15_DEVICE_COLOUR 128
 
 #define G15_KEY_READ_LENGTH 9
+#define G13_KEY_READ_LENGTH 8
 #define G510_STANDARD_KEYBOARD_INTERFACE	0x0
 
 typedef struct libg15_devices_t libg15_devices_t;
@@ -129,10 +132,6 @@ struct libg15_devices_t {
     G15_KEY_G16 = 1<<15,
     G15_KEY_G17 = 1<<16,
     G15_KEY_G18 = 1<<17,
-    G15_KEY_G19 = 1<<28,
-    G15_KEY_G20 = 1<<29,
-    G15_KEY_G21 = 1<<30,
-    G15_KEY_G22 = 1<<31,
 
     G15_KEY_M1  = 1<<18,
     G15_KEY_M2  = 1<<19,
@@ -145,18 +144,40 @@ struct libg15_devices_t {
     G15_KEY_L4  = 1<<25,
     G15_KEY_L5  = 1<<26,
 
-    G15_KEY_LIGHT = 1<<27
+    G15_KEY_LIGHT = 1<<27,
 
-    //need to add them to the enum but not enough positions left
-    //  G15_KEY_JOYBL = 1<<32,
-    //  G15_KEY_JOYBD = 1<<33,
-    //  G15_KEY_JOYBS = 1<<34
+    G15_EXTENDED_KEY = 1<<28,
+
+	/* G13 extended keys */
+    G15_KEY_G19 = 1<<0,
+    G15_KEY_G20 = 1<<1,
+    G15_KEY_G21 = 1<<2,
+    G15_KEY_G22 = 1<<3,
+
+    G15_KEY_JOYBL = 1<<4,
+    G15_KEY_JOYBD = 1<<5,
+    G15_KEY_JOYBS = 1<<6,
+    G15_JOY = 1<<7,
+
+	/* G510 multimedia keys */
+    G15_KEY_PLAY = 1 << 0,
+    G15_KEY_STOP= 1 << 1,
+    G15_KEY_PREV = 1 << 2,
+    G15_KEY_NEXT = 1 << 3,
+    G15_KEY_MUTE = 1 << 4,
+    G15_KEY_RAISE_VOLUME = 1 << 5,
+    G15_KEY_LOWER_VOLUME = 1 << 6,
   };
 
 
   /* this one return G15_NO_ERROR on success, something
    * else otherwise (for instance G15_ERROR_OPENING_USB_DEVICE */
   int initLibG15();
+  
+  /* initialise with or without initialising libusb. use this if something else has already
+     used libusb and read devices / busses or if you want a particular device*/
+  int setupLibG15(unsigned int vendorId, unsigned int productId, unsigned int init_usb);
+  
   /* re-initialise a previously unplugged keyboard ie ENODEV was returned at some point */
   int re_initLibG15();
 
@@ -165,6 +186,9 @@ struct libg15_devices_t {
   void libg15Debug(int option);
   
   int writePixmapToLCD(unsigned char const *data);
+  int getJoystickX();
+  int getJoystickY();
+  int getBacklightState();
   int setLCDContrast(unsigned int level);
   int setLEDs(unsigned int leds);
   int setLCDBrightness(unsigned int level);
