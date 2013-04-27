@@ -1404,6 +1404,9 @@ int getPressedKeys(unsigned int *pressed_keys, unsigned int timeout)
          	  processKeyEvent2Byte(pressed_keys, buffer);
          	  return G15_NO_ERROR;
           } // Deliberate fallthrough
+      case -75:
+          g15_log(stderr, G15_LOG_INFO, "Got more data! rl: %d Ret: %x\n", read_length, ret);
+          return G15_NO_ERROR;
       default:
           return handle_usb_errors("Keyboard Read", ret); /* allow the app to deal with errors */
     }
