@@ -1,1 +1,17 @@
-Watch here for interesting news.
+libg15-gnome15 1.3.0.3 (2013-04-29)
+===================================
+
+This is an "unofficial" release of libg15-gnome15.
+libg15-gnome15 is a fork of libg15 with some adaptations made for the Gnome15
+suite of tools.
+There was no news from the original author since four
+months now.
+
+Changes since 1.3.0.2:
+
+* None, this is a bugfix only release
+
+Bugs fixed in this release:
+
+* https://projects.russo79.com/issues/155
+
