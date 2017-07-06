@@ -30,6 +30,8 @@
 #include "config.h"
 
 static usb_dev_handle *keyboard_device = 0;
+static int initialized_vendor_id = -1;
+static int initialized_product_id = -1;
 static int libg15_debugging_enabled = 0;
 static int enospc_slowdown = 0;
 
@@ -241,6 +243,7 @@ static usb_dev_handle * findAndOpenDevice(libg15_devices_t handled_device, int d
                                   }
                                 }
                                 usleep(50*1000);
+                                g15_log(stderr,G15_LOG_INFO,"usb_claim_interface() interface : %d\n",i);
                                 while((ret = usb_claim_interface(devh,i)) && retries <10) {
                                     usleep(50*1000);
                                     retries++;
@@ -293,10 +296,82 @@ static usb_dev_handle * findAndOpen(unsigned int vendorid, unsigned int producti
     int i;
     for (i=0; g15_devices[i].name != NULL ;i++){
         if( ( vendorid == 0 || g15_devices[i].vendorid == vendorid ) &
-        	( productid == 0 || g15_devices[i].productid == productid ) ) {
+            ( productid == 0 || g15_devices[i].productid == productid ) ) {
             g15_log(stderr,G15_LOG_INFO,"Trying to find %s\n",g15_devices[i].name);
             keyboard_device = findAndOpenDevice(g15_devices[i],i);
-			if(keyboard_device){
+            if(keyboard_device){
+                if( vendorid != 0 && productid != 0 ) {
+                    initialized_vendor_id = vendorid;
+                    initialized_product_id = productid;
+                }
+                break;
+            }
+            else {
+                g15_log(stderr,G15_LOG_INFO,"%s not found\n",g15_devices[i].name);
+            }
+        }
+        else {
+            g15_log(stderr,G15_LOG_INFO,"%s skipped\n",g15_devices[i].name);
+        }
+    }
+    return keyboard_device;
+}
+
+static usb_dev_handle * findAndOpenG15() {
+	return findAndOpen(0, 0);
+}
+
+static int findAndCloseDevice(libg15_devices_t handled_device, int device_index) {
+    struct usb_bus *bus = 0;
+    struct usb_device *dev = 0;
+    int j,i;
+    int retval = G15_NO_ERROR;
+
+    if( ! keyboard_device ) {
+        g15_log(stderr,G15_LOG_INFO,"Trying to close not opened device\n");
+        return -1;
+    }
+
+    for (bus = usb_busses; bus; bus = bus->next)
+    {
+        for (dev = bus->devices; dev; dev = dev->next)
+        {
+            if ((dev->descriptor.idVendor == handled_device.vendorid && dev->descriptor.idProduct == handled_device.productid))
+            {
+                g15_log(stderr,G15_LOG_INFO,"Found %s, trying to close it\n",handled_device.name);
+                g15_log(stderr, G15_LOG_INFO, "Device has %i possible configurations\n",dev->descriptor.bNumConfigurations);
+
+                for (j = 0; j<dev->descriptor.bNumConfigurations;j++){
+                    struct usb_config_descriptor *cfg = &dev->config[j];
+
+                    for (i=0;i<cfg->bNumInterfaces; i++){
+                        if (g15DeviceCapabilities()&G15_DEVICE_G510){
+                            if (i==G510_STANDARD_KEYBOARD_INTERFACE) continue;
+                        }
+
+                        retval = usb_release_interface(keyboard_device, i);
+                        if(retval != 0)
+                            g15_log(stderr,G15_LOG_WARN,"usb_release_interface() failure : return value: %d\n", retval);
+                        return retval;
+                    }
+                }
+            }
+        }
+    }
+    g15_log(stderr,G15_LOG_INFO,"Trying to close not found device\n");
+    return -1;
+}
+
+static int findAndClose(unsigned int vendorid, unsigned int productid) {
+    int i;
+    int retval = G15_NO_ERROR;
+    for (i=0; g15_devices[i].name != NULL ;i++){
+        if( ( g15_devices[i].vendorid == vendorid ) &
+            ( g15_devices[i].productid == productid ) ) {
+            g15_log(stderr,G15_LOG_INFO,"Trying to find %s\n",g15_devices[i].name);
+            retval = findAndCloseDevice(g15_devices[i],i);
+			if(retval == 0){
+                g15_log(stderr,G15_LOG_INFO,"Device %s released !\n", g15_devices[i].name);
 				break;
 			}
 			else {
@@ -307,13 +382,8 @@ static usb_dev_handle * findAndOpen(unsigned int vendorid, unsigned int producti
 			g15_log(stderr,G15_LOG_INFO,"%s skipped\n",g15_devices[i].name);
         }
     }
-    return keyboard_device;
+    return retval;
 }
-
-static usb_dev_handle * findAndOpenG15() {
-	return findAndOpen(0, 0);
-}
-
 
 int re_initLibG15()
 {
@@ -397,8 +467,14 @@ int exitLibG15()
     g15_lcd_endpoint = 0;
     if (keyboard_device){
 #ifndef SUN_LIBUSB
-        retval = usb_release_interface (keyboard_device, 0);
-        usleep(50*1000);
+        if( initialized_vendor_id > 0 && initialized_product_id > 0 ) {
+            retval = findAndClose(initialized_vendor_id, initialized_product_id);
+            usleep(50*1000);
+            initialized_vendor_id = -1;
+            initialized_product_id = -1;
+        }
+        else
+            g15_log(stderr,G15_LOG_WARN,"Unable to release keyboard device interface !!!");
 #endif
 #if 0
         retval = usb_reset(keyboard_device);
