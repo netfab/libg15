@@ -1,13 +1,15 @@
-# Fork of libg15-gnome15, which is itself based on g15tools
-	* Based on libg15-gnome15-1.3.0.3
-	* Used by myself for my own project
+## Fork of libg15-gnome15, which is itself based on g15tools
 
-# Links
-	* https://sourceforge.net/projects/g15tools/
-	* http://www.libusb.org/wiki/libusb-compat-0.1
-	* http://git.libusb.org/?p=libusb-compat-0.1.git
+ * Based on libg15-gnome15-1.3.0.3
+ * Used by myself for my own project
 
-## Old README
+## Links
+
+ * https://sourceforge.net/projects/g15tools/
+ * http://www.libusb.org/wiki/libusb-compat-0.1
+ * http://git.libusb.org/?p=libusb-compat-0.1.git
+
+### Old README
 
 This is a library to handle the LCD and extra keys on the Logitech G15 Gaming
 Keyboard and similar devices.
