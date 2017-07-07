@@ -1,3 +1,6 @@
+AUTOMAKE_OPTIONS = foreign
+SUBDIRS = doc
+
 LLIBDIR=@LIBDIR@ 
 lib_LTLIBRARIES = libg15.la
 libg15_la_SOURCES = libg15.h libg15.c
