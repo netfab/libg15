@@ -6,6 +6,9 @@ include_HEADERS= libg15.h
 EXTRA_DIST = 
 ACLOCAL_AMFLAGS = -I m4
 
+pkgconfigdir=$(libdir)/pkgconfig
+pkgconfig_DATA=libg15.pc
+
 dist-hook:
 	rm -rf `find $(distdir)/debian -name .svn`
 	rm -rf `find $(distdir)/rpm -name .svn`

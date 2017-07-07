@@ -50,5 +50,6 @@ AC_C_CONST
 # Checks for library functions.
 AC_CHECK_FUNCS([memset])
 
+AC_CONFIG_FILES([libg15.pc])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
