@@ -1,17 +1,10 @@
-libg15-gnome15 1.3.0.3 (2013-04-29)
-===================================
 
-This is an "unofficial" release of libg15-gnome15.
-libg15-gnome15 is a fork of libg15 with some adaptations made for the Gnome15
-suite of tools.
-There was no news from the original author since four
-months now.
+libg15 (2017-07-07)
+===================
+g15tools and gnome15 projects seems dead.
+I needed to fix some bugs into that library, so here is another fork.
+First bug fixed is described into commit 76f3592e66383cc6b551ca11428399ca06c1b646.
 
-Changes since 1.3.0.2:
-
-* None, this is a bugfix only release
-
-Bugs fixed in this release:
-
-* https://projects.russo79.com/issues/155
-
+ * based on libg15-gnome15-1.3.0.3
+ * git project renamed back to libg15
+ * original NEWS file form libg15-gnome15 can be found into doc/NEWS.old
