@@ -1,12 +1,20 @@
 /*
-    This file is part of g15tools.
+    libg15, library to handle the LCD and extra keys on the
+	Logitech G15 Gaming Keyboard and similar devices.
 
-    g15tools is free software; you can redistribute it and/or modify
+	Copyright (c) 2017 Fabrice Delliaux <netbox253@gmail.com>
+
+	libg15 was originaly forked from g15tools.
+		(c) 2006-2007 The G15tools Project -
+			https://sourceforge.net/projects/g15tools/
+	See also AUTHORS file.
+
+    libg15 is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 
-    g15tools is distributed in the hope that it will be useful,
+    libg15 is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
@@ -15,9 +23,6 @@
     along with libg15; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-    (c) 2006-2007 The G15tools Project - g15tools.sf.net
-
-    $Revision: 324 $ -  $Date: 2011-02-24 00:13:57 +0000 (Thu, 24 Feb 2011) $ $Author: SteelSide $
 */
 
 #include <pthread.h>

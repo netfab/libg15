@@ -8,4 +8,3 @@ doc_DATA =	ChangeLog.old \
 			../INSTALL \
 			../COPYING
 
-
