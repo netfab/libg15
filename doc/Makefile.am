@@ -1,4 +1,4 @@
-docdir = $(datadir)/doc/@PACKAGE@
+docdir = $(datadir)/doc/@PACKAGE@-@VERSION@
 doc_DATA =	ChangeLog.old \
 			NEWS.old \
 			../ChangeLog \
