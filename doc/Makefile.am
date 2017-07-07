@@ -8,3 +8,6 @@ doc_DATA =	ChangeLog.old \
 			../INSTALL \
 			../COPYING
 
+EXTRA_DIST =	ChangeLog.old \
+				NEWS.old \
+				../README.md
