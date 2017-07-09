@@ -50,8 +50,7 @@ install_it:
 
 uninstall_it:
 	cd $(build_dir) && test -d "$(PREFIX_DIR)" && make uninstall || echo 'no need uninstall phase.'
-	cd "$(PREFIX_DEV_DIR)" && rmdir -v libg15/lib || echo 'uninstall artefacts rmdir failure 1.'
-	cd "$(PREFIX_DEV_DIR)" && rmdir -v -p libg15/include || echo 'uninstall artefacts rmdir failure 2.'
+	find $(PREFIX_DIR) -type d -empty -delete
 
 clean_it: uninstall_it
 	cd $(build_dir) && make clean
