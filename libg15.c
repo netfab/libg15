@@ -875,6 +875,7 @@ int setG510LEDColor(unsigned char r, unsigned char g, unsigned char b)
     return retval;
 }
 
+#if 0
 static unsigned char g15KeyToLogitechKeyCode(int key)
 {
    // first 12 G keys produce F1 - F12, thats 0x3a + key
@@ -888,6 +889,7 @@ static unsigned char g15KeyToLogitechKeyCode(int key)
         return 0x1e + key - 12; // sigh, half an hour to find  -12 ....
     }
 }
+#endif
 
 static void processKeyEventG13(unsigned int *pressed_keys, unsigned char *buffer)
 {
