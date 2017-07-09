@@ -4,7 +4,7 @@ build_dir= ../build
 PREFIX_DEV_DIR=/var/tmp/devcxx
 PREFIX_DIR=$(PREFIX_DEV_DIR)/libg15
 LANG=C
-CXXFLAGS="-march=sandybridge -mtune=generic -O2 -pipe -mmmx -msse -msse2"
+CFLAGS="-march=sandybridge -mtune=generic -O2 -pipe -mmmx -msse -msse2"
 CONFIG_AUX_DIR=config
 CONFIG_MACRO_DIR=m4
 
@@ -39,7 +39,7 @@ autoreconf_it:
 
 
 configure_it: init_dir
-	cd $(build_dir) && $(top_srcdir)/configure CXXFLAGS=$(CXXFLAGS) \
+	cd $(build_dir) && $(top_srcdir)/configure CFLAGS=$(CFLAGS) \
 	--srcdir=$(top_srcdir) --prefix=$(PREFIX_DIR)
 
 build_it:
