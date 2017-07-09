@@ -1385,18 +1385,14 @@ int getPressedKeys(unsigned int *pressed_keys, unsigned int timeout)
         return G15_NO_ERROR;
 	}
 
-    unsigned char buffer[G15_KEY_READ_LENGTH];
-    int x = 0;
+    unsigned char buffer[G15_KEY_READ_LENGTH] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
     int ret = 0;
     int caps = g15DeviceCapabilities();
     int read_length = G15_KEY_READ_LENGTH;
 
-    if(caps & G15_DEVICE_G13) {
-    	read_length = G13_KEY_READ_LENGTH;
-    }
-
-    for( x = 0 ; x < read_length; x++) {
-        buffer[x] = 0;
+    // maximum expected 8 bytes long for G13 and G510/G510s devices
+    if( (caps & G15_DEVICE_G13) || (caps & G15_DEVICE_G510) ) {
+        read_length = G13_KEY_READ_LENGTH;
     }
 
 #ifdef LIBUSB_BLOCKS
