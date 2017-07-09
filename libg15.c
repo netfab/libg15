@@ -448,10 +448,22 @@ int setupLibG15(unsigned int vendorId, unsigned int productId, unsigned int init
 		unsigned char usb_data[] = { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 0 };
         pthread_mutex_lock(&libusb_mutex);
+
         int retval = 0;
+
         retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x301, 1, (char*)usb_data, 19, 10000);
+        if( retval < 0 )
+            g15_log(stderr,G15_LOG_WARN,"Error sending control message : %d\n", retval);
+        else
+            g15_log(stderr,G15_LOG_INFO,"Control message sent : %d bytes\n", retval);
+
         unsigned char usb_data_2[] = { 0x09, 0x02, 0, 0, 0, 0, 0, 0 };
         retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x309, 1, (char*)usb_data_2, 8, 10000);
+        if( retval < 0 )
+            g15_log(stderr,G15_LOG_WARN,"Error sending control message : %d\n", retval);
+        else
+            g15_log(stderr,G15_LOG_INFO,"Control message sent : %d bytes\n", retval);
+
         pthread_mutex_unlock(&libusb_mutex);
     }
 
