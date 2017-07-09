@@ -50,7 +50,7 @@ install_it:
 
 uninstall_it:
 	cd $(build_dir) && test -d "$(PREFIX_DIR)" && make uninstall || echo 'no need uninstall phase.'
-	find $(PREFIX_DIR) -type d -empty -delete
+	test -d "$(PREFIX_DIR)" && find "$(PREFIX_DIR)" -type d -empty -delete || echo 'dirs cleaned'
 
 clean_it: uninstall_it
 	cd $(build_dir) && make clean
