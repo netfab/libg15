@@ -155,7 +155,6 @@ static usb_dev_handle * findAndOpenDevice(libg15_devices_t handled_device, int d
     struct usb_device *dev = 0;
     int retries=0;
     int j,i,k,l;
-    int interface=0;
 
     for (bus = usb_busses; bus; bus = bus->next)
     {
