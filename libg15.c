@@ -832,7 +832,7 @@ int setKBBrightness(unsigned int level)
 
 int setG510LEDColor(unsigned char r, unsigned char g, unsigned char b)
 {
-    if((!g15DeviceCapabilities() & G15_DEVICE_COLOUR))
+    if( ( ! g15DeviceCapabilities() ) & G15_DEVICE_COLOUR )
         return G15_ERROR_UNSUPPORTED;
 
     int retval = 0;
