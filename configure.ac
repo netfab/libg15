@@ -32,7 +32,9 @@ case $host_os in
 esac
 
 # Checks for libraries.
-AC_CHECK_LIB([usb], [main], ,AC_MSG_ERROR(["libusb not found. please install it"]))
+AC_SEARCH_LIBS([usb_init], [usb], [], [
+	AC_MSG_ERROR([libusb not found. please install it])
+])
 
 dnl Some versions of libusb do not honour timeout and block. Suns' version is one of them.
 if test "x$libusb_blocks" == "xtrue"; then
