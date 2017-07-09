@@ -891,8 +891,6 @@ static unsigned char g15KeyToLogitechKeyCode(int key)
 
 static void processKeyEventG13(unsigned int *pressed_keys, unsigned char *buffer)
 {
-    int i;
-
     *pressed_keys = 0;
 
     if (buffer[0] == 0x01)
@@ -963,8 +961,6 @@ static void processKeyEventG13(unsigned int *pressed_keys, unsigned char *buffer
 
 static void processKeyEventG13Extended(unsigned int *pressed_keys, unsigned char *buffer)
 {
-    int i;
-
     *pressed_keys = 0;
 
     if (buffer[0] == 0x01)
@@ -1014,7 +1010,6 @@ static void processKeyEventG13Extended(unsigned int *pressed_keys, unsigned char
 
 static void processG510AudioKeyEvent(unsigned int *pressed_keys, unsigned char *buffer)
 {
-    int i;
     *pressed_keys = 0;
     if (buffer[0] == 0x03)
     {
@@ -1032,8 +1027,6 @@ static void processG510AudioKeyEvent(unsigned int *pressed_keys, unsigned char *
 
 static void processKeyEvent9Byte(unsigned int *pressed_keys, unsigned char *buffer)
 {
-    int i;
-
     *pressed_keys = 0;
 
     g15_log(stderr,G15_LOG_INFO,"Keyboard: %x, %x, %x, %x, %x, %x, %x, %x, %x\n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7],buffer[8]);
@@ -1123,8 +1116,6 @@ static void processKeyEvent9Byte(unsigned int *pressed_keys, unsigned char *buff
 
 static void processKeyEvent5Byte(unsigned int *pressed_keys, unsigned char *buffer)
 {
-    int i;
-
     *pressed_keys = 0;
 
     g15_log(stderr,G15_LOG_INFO,"Keyboard: %x, %x, %x, %x, %x\n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4]);
@@ -1271,8 +1262,6 @@ static void processKeyEvent5Byte(unsigned int *pressed_keys, unsigned char *buff
 
 static void processKeyEvent4Byte(unsigned int *pressed_keys, unsigned char *buffer)
 {
-	int i;
-
 	*pressed_keys = 0;
 
 	g15_log(stderr,G15_LOG_INFO,"Keyboard: %x, %x, %x, %x\n",buffer[0],buffer[1],buffer[2],buffer[3]);
