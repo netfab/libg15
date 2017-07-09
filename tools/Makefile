@@ -4,7 +4,7 @@ build_dir= ../build
 PREFIX_DEV_DIR=/var/tmp/devcxx
 PREFIX_DIR=$(PREFIX_DEV_DIR)/libg15
 LANG=C
-CFLAGS="-march=sandybridge -mtune=generic -O2 -pipe -mmmx -msse -msse2"
+CFLAGS="-march=sandybridge -mtune=generic -O2 -pipe -mmmx -msse -msse2 -Wall -Werror"
 CONFIG_AUX_DIR=config
 CONFIG_MACRO_DIR=m4
 
