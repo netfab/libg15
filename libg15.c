@@ -438,7 +438,8 @@ int setupLibG15(unsigned int vendorId, unsigned int productId, unsigned int init
     pthread_mutex_init(&libusb_mutex, NULL);
 
     if (g15DeviceCapabilities()&G15_DEVICE_G13){
-    	unsigned int *pk;
+        unsigned int key = 0;
+        unsigned int *pk = &key;
     	getPressedKeys(pk, 2000);
 	    g15_log(stderr,G15_LOG_INFO,"Initial keypress %d\n", pk);
     }
