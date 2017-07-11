@@ -1,6 +1,9 @@
 
 See git log for full changelog.
 
+*** Version 1.3.0.6
+	* Fix regression introduced in previous version
+
 *** Version 1.3.0.5
 	* Fix a bunch of gcc warnings
 	* Expect a maximum of 8 bytes on interrupt read requests
