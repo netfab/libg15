@@ -3,6 +3,7 @@
 	Logitech G15 Gaming Keyboard and similar devices.
 
 	Copyright (c) 2017 Fabrice Delliaux <netbox253@gmail.com>
+		https://github.com/netfab/libg15
 
 	libg15 was originaly forked from g15tools.
 		(c) 2006-2007 The G15tools Project -
