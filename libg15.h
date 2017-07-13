@@ -89,13 +89,18 @@ struct libg15_devices_t {
   
   enum
   {
-    G15_LCD_OFFSET = 32,
-    G15_LCD_HEIGHT = 43,
-    G15_LCD_WIDTH = 160
+    G15_LCD_OFFSET = 32,    /* LCD screen format buffer header length */
+    G15_LCD_HEIGHT = 43,    /* LCD screen height in pixels */
+    G15_LCD_WIDTH = 160     /* LCD screen width in pixels */
   };
 
   enum
   {
+    /*
+     * Buffer length for LCD screen format
+     * (( (G15_LCD_HEIGHT/8) + ((G15_LCD_HEIGHT%8) ? 1 : 0 )) * G15_LCD_WIDTH) + G15_LCD_OFFSET
+     * See dumpPixmapIntoLCDFormat()
+     */
     G15_BUFFER_LEN = 0x03e0
   };
 
