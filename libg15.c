@@ -231,6 +231,7 @@ static usb_dev_handle * findAndOpenDevice(libg15_devices_t handled_device, int d
 									else
 									{
 										g15_log(stderr,G15_LOG_INFO,"Sorry, I could not detach the driver, giving up\n");
+										usb_close(devh);
 										return 0;
 									}
 
@@ -242,6 +243,7 @@ static usb_dev_handle * findAndOpenDevice(libg15_devices_t handled_device, int d
 									if (ret)
 									{
 									g15_log(stderr,G15_LOG_INFO,"Error setting the configuration, this is fatal. Returned %d\n", ret);
+									usb_close(devh);
 									return 0;
 									}
 								}
@@ -254,6 +256,7 @@ static usb_dev_handle * findAndOpenDevice(libg15_devices_t handled_device, int d
 
 								if (ret) {
 									g15_log(stderr,G15_LOG_INFO,"Error claiming interface, good day cruel world\n");
+									usb_close(devh);
 									return 0;
 								}
 
