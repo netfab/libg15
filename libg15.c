@@ -246,11 +246,10 @@ static usb_dev_handle * findAndOpenDevice(libg15_devices_t handled_device, int d
 									}
 								}
 								usleep(50*1000);
-								g15_log(stderr,G15_LOG_INFO,"usb_claim_interface() interface : %d\n",i);
+								g15_log(stderr,G15_LOG_INFO,"Trying to claim interface %d\n", i);
 								while((ret = usb_claim_interface(devh,i)) && retries <10) {
 									usleep(50*1000);
-									retries++;
-									g15_log(stderr,G15_LOG_INFO,"Trying to claim interface\n");
+									g15_log(stderr,G15_LOG_INFO,"	retry %d ...\n",++retries);
 								}
 
 								if (ret) {
