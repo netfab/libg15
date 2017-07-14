@@ -36,8 +36,6 @@
 #include "config.h"
 
 static usb_dev_handle *keyboard_device = 0;
-static int initialized_vendor_id = -1;
-static int initialized_product_id = -1;
 static int libg15_debugging_enabled = 0;
 static int enospc_slowdown = 0;
 
@@ -304,10 +302,6 @@ static usb_dev_handle * findAndOpen(unsigned int vendorid, unsigned int producti
 			g15_log(stderr,G15_LOG_INFO,"Trying to find %s\n",g15_devices[i].name);
 			keyboard_device = findAndOpenDevice(g15_devices[i],i);
 			if(keyboard_device){
-				if( vendorid != 0 && productid != 0 ) {
-					initialized_vendor_id = vendorid;
-					initialized_product_id = productid;
-				}
 				break;
 			}
 			else {
@@ -479,11 +473,12 @@ int exitLibG15() {
 	if (keyboard_device){
 		int retval = -1;
 #ifndef SUN_LIBUSB
-		if( initialized_vendor_id > 0 && initialized_product_id > 0 ) {
-			retval = findAndClose(initialized_vendor_id, initialized_product_id);
+		if(found_devicetype > -1) {
+			retval = findAndClose(
+				g15_devices[found_devicetype].vendorid,
+				g15_devices[found_devicetype].productid );
+			found_devicetype = -1;
 			usleep(50*1000);
-			initialized_vendor_id = -1;
-			initialized_product_id = -1;
 		}
 		else
 			g15_log(stderr,G15_LOG_WARN,"Unable to release keyboard device interface !!!");
