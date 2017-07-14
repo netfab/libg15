@@ -312,6 +312,7 @@ static usb_dev_handle * findAndOpen(unsigned int vendorid, unsigned int producti
 			}
 			else {
 				g15_log(stderr,G15_LOG_INFO,"%s not found\n",g15_devices[i].name);
+				found_devicetype = -1;
 			}
 		}
 		else {
