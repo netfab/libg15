@@ -331,7 +331,7 @@ static int findAndCloseDevice(libg15_devices_t handled_device, int device_index)
 	int j,i;
 
 	if( ! keyboard_device ) {
-		g15_log(stderr,G15_LOG_INFO,"Trying to close not opened device\n");
+		g15_log(stderr,G15_LOG_WARN,"Tried to close not opened device\n");
 		return -1;
 	}
 
@@ -357,13 +357,15 @@ static int findAndCloseDevice(libg15_devices_t handled_device, int device_index)
 							g15_log(stderr,G15_LOG_WARN,"release interface failure : (%d) : %s\n", retval, usb_strerror());
 							return -1;
 						}
+
+						g15_log(stderr,G15_LOG_INFO,"Device %s released !\n", handled_device.name);
 						return G15_NO_ERROR;
 					}
 				}
 			}
 		}
 	}
-	g15_log(stderr,G15_LOG_INFO,"Trying to close not found device\n");
+	g15_log(stderr,G15_LOG_WARN,"Tried to close not found device\n");
 	return -1;
 }
 
@@ -375,13 +377,7 @@ static int findAndClose(unsigned int vendorid, unsigned int productid) {
 			( g15_devices[i].productid == productid ) ) {
 			g15_log(stderr,G15_LOG_INFO,"Trying to find %s\n",g15_devices[i].name);
 			retval = findAndCloseDevice(g15_devices[i],i);
-			if(retval == 0){
-				g15_log(stderr,G15_LOG_INFO,"Device %s released !\n", g15_devices[i].name);
-				break;
-			}
-			else {
-				g15_log(stderr,G15_LOG_INFO,"%s not found\n",g15_devices[i].name);
-			}
+			break;
 		}
 		else {
 			g15_log(stderr,G15_LOG_INFO,"%s skipped\n",g15_devices[i].name);
