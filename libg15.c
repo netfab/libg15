@@ -622,7 +622,7 @@ int writePixmapToLCD(unsigned char const *data) {
 
 	dumpPixmapIntoLCDFormat(lcd_buffer, data);
 
-	if(!(g15_devices[found_devicetype].caps & G15_LCD))
+	if( ! (g15DeviceCapabilities() & G15_LCD) )
 		return 0;
 
 	/* the keyboard needs this magic byte */
