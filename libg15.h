@@ -202,6 +202,7 @@ struct libg15_devices_t {
   /* re-initialise a previously unplugged keyboard ie ENODEV was returned at some point */
   int re_initLibG15();
 
+  /* return -1 on failure, G15_NO_ERROR on success */
   int exitLibG15();
   /* enable or disable debugging */
   void libg15Debug(int option);

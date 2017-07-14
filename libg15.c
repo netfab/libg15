@@ -329,7 +329,6 @@ static int findAndCloseDevice(libg15_devices_t handled_device, int device_index)
 	struct usb_bus *bus = 0;
 	struct usb_device *dev = 0;
 	int j,i;
-	int retval = G15_NO_ERROR;
 
 	if( ! keyboard_device ) {
 		g15_log(stderr,G15_LOG_INFO,"Trying to close not opened device\n");
@@ -353,10 +352,12 @@ static int findAndCloseDevice(libg15_devices_t handled_device, int device_index)
 							if (i==G510_STANDARD_KEYBOARD_INTERFACE) continue;
 						}
 
-						retval = usb_release_interface(keyboard_device, i);
-						if(retval != 0)
-							g15_log(stderr,G15_LOG_WARN,"usb_release_interface() failure : return value: %d\n", retval);
-						return retval;
+						int retval = usb_release_interface(keyboard_device, i);
+						if(retval != 0) {
+							g15_log(stderr,G15_LOG_WARN,"release interface failure : (%d) : %s\n", retval, usb_strerror());
+							return -1;
+						}
+						return G15_NO_ERROR;
 					}
 				}
 			}
@@ -368,7 +369,7 @@ static int findAndCloseDevice(libg15_devices_t handled_device, int device_index)
 
 static int findAndClose(unsigned int vendorid, unsigned int productid) {
 	int i;
-	int retval = G15_NO_ERROR;
+	int retval = -1;
 	for (i=0; g15_devices[i].name != NULL ;i++){
 		if( ( g15_devices[i].vendorid == vendorid ) &
 			( g15_devices[i].productid == productid ) ) {
@@ -476,10 +477,10 @@ int initLibG15() {
 
 /* reset the keyboard, returning it to a known state */
 int exitLibG15() {
-	int retval = G15_NO_ERROR;
 	g15_keys_endpoint = 0;
 	g15_lcd_endpoint = 0;
 	if (keyboard_device){
+		int retval = -1;
 #ifndef SUN_LIBUSB
 		if( initialized_vendor_id > 0 && initialized_product_id > 0 ) {
 			retval = findAndClose(initialized_vendor_id, initialized_product_id);
