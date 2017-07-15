@@ -9,7 +9,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_TARGET()
 
 AM_INIT_AUTOMAKE()
-AC_CONFIG_SRCDIR([libg15.c])
+AC_CONFIG_SRCDIR([src/libg15.c])
 AC_CONFIG_HEADER([config.h])
 
 # Checks for programs.
@@ -55,6 +55,7 @@ AC_CHECK_FUNCS([memset])
 AC_CONFIG_FILES([
 	libg15.pc
 	doc/Makefile
+	src/Makefile
 	Makefile
 ])
 AC_OUTPUT
