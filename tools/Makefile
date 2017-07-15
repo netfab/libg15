@@ -5,6 +5,7 @@ PREFIX_DEV_DIR=/var/tmp/devcxx
 PREFIX_DIR=$(PREFIX_DEV_DIR)/libg15
 LANG=C
 CFLAGS="-march=sandybridge -mtune=generic -O2 -pipe -mmmx -msse -msse2 -Wall -Werror"
+# relative to $(top_srcdir)
 CONFIG_AUX_DIR=config
 CONFIG_MACRO_DIR=m4
 
@@ -28,17 +29,21 @@ MAINTAINERCLEANFILES = \
 all:
 	@echo "Available targets :"
 	@echo " autoreconf_it configure_it build_it install_it distcheck_it"
-	@echo " uninstall_it clean_it fullclean_it init_dir all"
+	@echo " uninstall_it clean_it fullclean_it init_builddir all"
 	@echo
 
-init_dir:
+
+init_m4dir:
+	test ! -d "$(top_srcdir)/$(CONFIG_MACRO_DIR)" && mkdir -p "$(top_srcdir)/$(CONFIG_MACRO_DIR)" || echo "m4 directory already present"
+
+init_builddir:
 	test ! -d $(build_dir) && mkdir -p $(build_dir) || echo "build_dir already present"
 
-autoreconf_it:
+autoreconf_it: init_m4dir
 	cd $(top_srcdir) && autoreconf -i
 
 
-configure_it: init_dir
+configure_it: init_builddir
 	cd $(build_dir) && $(top_srcdir)/configure CFLAGS=$(CFLAGS) \
 	--srcdir=$(top_srcdir) --prefix=$(PREFIX_DIR)
 
@@ -62,7 +67,8 @@ fullclean_it: clean_it
 	cd $(build_dir) && find . -depth -type d -delete
 	cd $(build_dir) && test -f *.tar.gz && rm -v *.tar.gz || echo 'archive not found.'
 	rmdir -v $(build_dir)
-	rmdir -v ../$(CONFIG_AUX_DIR)
+	rmdir -v $(top_srcdir)/$(CONFIG_AUX_DIR)
+	rmdir -v $(top_srcdir)/$(CONFIG_MACRO_DIR)
 
 distcheck_it:
 	cd $(build_dir) && make distcheck
