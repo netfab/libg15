@@ -54,7 +54,6 @@ AC_CHECK_FUNCS([memset])
 
 AC_CONFIG_FILES([
 	libg15.pc
-	doc/Makefile
 	src/Makefile
 	Makefile
 ])
