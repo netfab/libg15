@@ -293,7 +293,7 @@ static usb_dev_handle * findAndOpenDevice(libg15_devices_t handled_device, int d
 static usb_dev_handle * findAndOpen(unsigned int vendorid, unsigned int productid) {
 	int i;
 	for (i=0; g15_devices[i].name != NULL ;i++) {
-		if ( ( vendorid == 0 || g15_devices[i].vendorid == vendorid ) &
+		if ( ( vendorid == 0 || g15_devices[i].vendorid == vendorid ) &&
 			( productid == 0 || g15_devices[i].productid == productid ) ) {
 			g15_log(stderr,G15_LOG_INFO,"Trying to find %s\n",g15_devices[i].name);
 			keyboard_device = findAndOpenDevice(g15_devices[i],i);
@@ -364,7 +364,7 @@ static int findAndClose(unsigned int vendorid, unsigned int productid) {
 	int retval = -1;
 
 	for (i=0; g15_devices[i].name != NULL ;i++) {
-		if ( ( g15_devices[i].vendorid == vendorid ) &
+		if ( ( g15_devices[i].vendorid == vendorid ) &&
 			( g15_devices[i].productid == productid ) ) {
 			g15_log(stderr,G15_LOG_INFO,"Trying to find %s\n",g15_devices[i].name);
 			retval = findAndCloseDevice(g15_devices[i],i);
