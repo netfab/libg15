@@ -1,0 +1,23 @@
+GLogiK=$PWD/.. CD=. {
+	Makefile.am
+	configure.ac
+	.gitignore
+	libg15.pc.in
+	AUTHORS
+	COPYING
+	ChangeLog
+	ChangeLog.old
+	INSTALL
+	NEWS
+	NEWS.old
+	README.md
+	tools=tools/ {
+		Makefile
+	}
+	srcfiles=src/ {
+		Makefile.am
+		libg15.h
+		libg15.c
+	}
+}
+
