@@ -1,4 +1,4 @@
-GLogiK=$PWD/.. CD=. {
+libg15=$PWD/.. CD=. {
 	Makefile.am
 	configure.ac
 	.gitignore
