@@ -398,6 +398,30 @@ int re_initLibG15() {
 	return G15_NO_ERROR;
 }
 
+static int sendControlRequest(const char *func, int value, int index, char *bytes, int size) {
+	int retval = -1;
+
+	pthread_mutex_lock(&libusb_mutex);
+	retval = usb_control_msg(
+				keyboard_device,
+				USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+				9,
+				value,
+				index,
+				bytes,
+				size,
+				10000
+			);
+	pthread_mutex_unlock(&libusb_mutex);
+
+	if ( retval < 0 )
+		g15_log(stderr,G15_LOG_WARN,"%s : error sending control message : %d\n", func, retval);
+	else
+		g15_log(stderr,G15_LOG_INFO,"%s : control message sent : %d bytes\n", func ,retval);
+
+	return retval;
+}
+
 int setupLibG15(unsigned int vendorId, unsigned int productId, unsigned int init_usb) {
 	int retval = initLibUsb();
 	if (init_usb && retval) {
@@ -436,24 +460,10 @@ int setupLibG15(unsigned int vendorId, unsigned int productId, unsigned int init
 		g15_log(stderr,G15_LOG_INFO,"Sending G510 initialisation.\n");
 		unsigned char usb_data[] = { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 0 };
-		pthread_mutex_lock(&libusb_mutex);
-
-		int retval = 0;
-
-		retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x301, 1, (char*)usb_data, 19, 10000);
-		if ( retval < 0 )
-			g15_log(stderr,G15_LOG_WARN,"Error sending control message : %d\n", retval);
-		else
-			g15_log(stderr,G15_LOG_INFO,"Control message sent : %d bytes\n", retval);
-
 		unsigned char usb_data_2[] = { 0x09, 0x02, 0, 0, 0, 0, 0, 0 };
-		retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x309, 1, (char*)usb_data_2, 8, 10000);
-		if ( retval < 0 )
-			g15_log(stderr,G15_LOG_WARN,"Error sending control message : %d\n", retval);
-		else
-			g15_log(stderr,G15_LOG_INFO,"Control message sent : %d bytes\n", retval);
 
-		pthread_mutex_unlock(&libusb_mutex);
+		sendControlRequest(__func__, 0x301, 1, (char*)usb_data, 19);
+		sendControlRequest(__func__, 0x309, 1, (char*)usb_data_2, 8);
 	}
 
 	return G15_NO_ERROR;
@@ -720,24 +730,21 @@ int setLCDContrast(unsigned int level) {
 			usb_data[3] = 18;
 			break;
 	}
-	pthread_mutex_lock(&libusb_mutex);
-	retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x302, 0, (char*)usb_data, 4, 10000);
-	pthread_mutex_unlock(&libusb_mutex);
+
+	retval = sendControlRequest(__func__, 0x302, 0, (char*)usb_data, 4);
 	return retval;
 }
 
 int setLEDs(unsigned int leds) {
 	int retval = 0;
 
-	pthread_mutex_lock(&libusb_mutex);
-
 	if (g15DeviceCapabilities() & G15_DEVICE_G13) {
 		unsigned char m_led_buf[5] = { 5, (unsigned char)leds, 0, 0, 0 };
-		retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x305, 0, (char*)m_led_buf, 5, 10000);
+		retval = sendControlRequest(__func__, 0x305, 0, (char*)m_led_buf, 5);
 	}
 	else if (g15DeviceCapabilities() & G15_DEVICE_G110) {
 		unsigned char m_led_buf[2] = { 3, (unsigned char)leds };
-		retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x303, 1, (char*)m_led_buf, 2, 10000);
+		retval = sendControlRequest(__func__, 0x303, 1, (char*)m_led_buf, 2);
 	}
 	else if (g15DeviceCapabilities() & G15_DEVICE_G510) {
 		// M-key light mask is different on this model
@@ -755,7 +762,7 @@ int setLEDs(unsigned int leds) {
 			new_leds += 0x10;
 		}
 		unsigned char m_led_buf[2] = { 4, (unsigned char)new_leds };
-		retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x304, 1, (char*)m_led_buf, 2, 10000);
+		retval = sendControlRequest(__func__, 0x304, 1, (char*)m_led_buf, 2);
 	}
 	else {
 		if (shared_device>0) {
@@ -763,10 +770,10 @@ int setLEDs(unsigned int leds) {
 		}
 		else {
 			unsigned char m_led_buf[4] = { 2, 4, ~(unsigned char)leds, 0 };
-			retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x302, 0, (char*)m_led_buf, 4, 10000);
+			retval = sendControlRequest(__func__, 0x302, 0, (char*)m_led_buf, 4);
 		}
 	}
-	pthread_mutex_unlock(&libusb_mutex);
+
 	return retval;
 }
 
@@ -788,9 +795,7 @@ int setLCDBrightness(unsigned int level) {
 			usb_data[2] = 0x00;
 			break;
 	}
-	pthread_mutex_lock(&libusb_mutex);
-	retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x302, 0, (char*)usb_data, 4, 10000);
-	pthread_mutex_unlock(&libusb_mutex);
+	retval = sendControlRequest(__func__, 0x302, 0, (char*)usb_data, 4);
 	return retval;
 }
 
@@ -813,9 +818,7 @@ int setKBBrightness(unsigned int level) {
 			usb_data[2] = 0x0;
 			break;
 	}
-	pthread_mutex_lock(&libusb_mutex);
-	retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x302, 0, (char*)usb_data, 4, 10000);
-	pthread_mutex_unlock(&libusb_mutex);
+	retval = sendControlRequest(__func__, 0x302, 0, (char*)usb_data, 4);
 	return retval;
 }
 
@@ -829,8 +832,6 @@ int setG510LEDColor(unsigned char r, unsigned char g, unsigned char b) {
 	usb_data[1] = r;
 	usb_data[2] = g;
 	usb_data[3] = b;
-
-	pthread_mutex_lock(&libusb_mutex);
 
 	if (g15DeviceCapabilities() & G15_DEVICE_G110) {
 		usb_data[0] = 7;
@@ -849,17 +850,16 @@ int setG510LEDColor(unsigned char r, unsigned char g, unsigned char b) {
 			usb_data[1] = ( 0x80 * b ) / r;
 			usb_data[4] = r>>4;
 		}
-		retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x307, 0, (char*)usb_data, 5, 10000);
+		retval = sendControlRequest(__func__, 0x307, 0, (char*)usb_data, 5);
 	}
 	else if (g15DeviceCapabilities() & G15_DEVICE_G13) {
 		usb_data[0] = 5;
-		retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x307, 0, (char*)usb_data, 4, 10000);
+		retval = sendControlRequest(__func__, 0x307, 0, (char*)usb_data, 4);
 	}
 	else {
 		usb_data[0] = 5;
-		retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x305, 1, (char*)usb_data, 4, 10000);
+		retval = sendControlRequest(__func__, 0x305, 1, (char*)usb_data, 4);
 	}
-	pthread_mutex_unlock(&libusb_mutex);
 	return retval;
 }
 
