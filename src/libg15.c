@@ -415,9 +415,13 @@ static int sendControlRequest(const char *func, int value, int index, char *byte
 	pthread_mutex_unlock(&libusb_mutex);
 
 	if ( retval < 0 )
-		g15_log(stderr,G15_LOG_WARN,"%s : error sending control message : %d\n", func, retval);
-	else
-		g15_log(stderr,G15_LOG_INFO,"%s : control message sent : %d bytes\n", func ,retval);
+		g15_log(stderr,G15_LOG_WARN,"%s : error sending message : %d\n", func, retval);
+	else {
+		if (retval == size) /* sanity check */
+			g15_log(stderr,G15_LOG_INFO,"%s : message sent : %d bytes\n", func, retval);
+		else
+			g15_log(stderr,G15_LOG_WARN,"%s : message sent : %d bytes - expected : %d bytes\n", func, retval, size);
+	}
 
 	return retval;
 }
