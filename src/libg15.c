@@ -404,7 +404,7 @@ static int sendControlRequest(const char *func, int value, int index, char *byte
 	if (pthread_mutex_lock(&libusb_mutex) == 0) {
 		retval = usb_control_msg(
 					keyboard_device,
-					USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+					USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
 					9,
 					value,
 					index,
