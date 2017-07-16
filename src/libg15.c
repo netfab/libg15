@@ -401,26 +401,30 @@ int re_initLibG15() {
 static int sendControlRequest(const char *func, int value, int index, char *bytes, int size) {
 	int retval = -1;
 
-	pthread_mutex_lock(&libusb_mutex);
-	retval = usb_control_msg(
-				keyboard_device,
-				USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-				9,
-				value,
-				index,
-				bytes,
-				size,
-				10000
-			);
-	pthread_mutex_unlock(&libusb_mutex);
+	if (pthread_mutex_lock(&libusb_mutex) == 0) {
+		retval = usb_control_msg(
+					keyboard_device,
+					USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+					9,
+					value,
+					index,
+					bytes,
+					size,
+					10000
+				);
+		pthread_mutex_unlock(&libusb_mutex);
 
-	if ( retval < 0 )
-		g15_log(stderr,G15_LOG_WARN,"%s : error sending message : %d\n", func, retval);
+		if ( retval < 0 )
+			g15_log(stderr,G15_LOG_WARN,"%s : error sending message : %d\n", func, retval);
+		else {
+			if (retval == size) /* sanity check */
+				g15_log(stderr,G15_LOG_INFO,"%s : message sent : %d bytes\n", func, retval);
+			else
+				g15_log(stderr,G15_LOG_WARN,"%s : message sent : %d bytes - expected : %d bytes\n", func, retval, size);
+		}
+	}
 	else {
-		if (retval == size) /* sanity check */
-			g15_log(stderr,G15_LOG_INFO,"%s : message sent : %d bytes\n", func, retval);
-		else
-			g15_log(stderr,G15_LOG_WARN,"%s : message sent : %d bytes - expected : %d bytes\n", func, retval, size);
+		g15_log(stderr,G15_LOG_WARN,"%s : error locking mutex, this is fatal. Returning %d\n", func, retval);
 	}
 
 	return retval;
