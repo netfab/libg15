@@ -596,7 +596,7 @@ int handle_usb_errors(const char *prefix, int ret) {
 			return G15_ERROR_READING_USB_DEVICE;  /* backward-compatibility */
 			break;
 		case -ENOSPC: /* the we dont have enough bandwidth, apparently.. something has to give here.. */
-			g15_log(stderr,G15_LOG_INFO,"usb error: ENOSPC.. reducing speed\n");
+			g15_log(stderr,G15_LOG_WARN,"usb error: ENOSPC.. reducing speed\n");
 			enospc_slowdown = 1;
 			break;
 		case -ENODEV: /* the device went away - we probably should attempt to reattach */
@@ -605,16 +605,16 @@ int handle_usb_errors(const char *prefix, int ret) {
 		case -EAGAIN: /* try again */
 		case -EFBIG: /* too many frames to handle */
 		case -EMSGSIZE: /* msgsize is invalid */
-			 g15_log(stderr,G15_LOG_INFO,"usb error: %s %s (%i)\n",prefix,usb_strerror(),ret);
+			 g15_log(stderr,G15_LOG_WARN,"usb error: %s %s (%i)\n",prefix,usb_strerror(),ret);
 			 break;
 		case -EPIPE: /* endpoint is stalled */
-			 g15_log(stderr,G15_LOG_INFO,"usb error: %s EPIPE! clearing...\n",prefix);
+			 g15_log(stderr,G15_LOG_WARN,"usb error: %s EPIPE! clearing...\n",prefix);
 			 pthread_mutex_lock(&libusb_mutex);
 			 usb_clear_halt(keyboard_device, 0x81);
 			 pthread_mutex_unlock(&libusb_mutex);
 			 break;
 		default: /* timed out */
-			 g15_log(stderr,G15_LOG_INFO,"Unknown usb error: %s !! (err is %i (%s))\n",prefix,ret,usb_strerror());
+			 g15_log(stderr,G15_LOG_WARN,"Unknown usb error: %s !! (err is %i (%s))\n",prefix,ret,usb_strerror());
 			 break;
 	}
 	return ret;
