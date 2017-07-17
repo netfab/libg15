@@ -1412,9 +1412,14 @@ int getPressedKeys(unsigned int *pressed_keys, unsigned int timeout) {
 #ifdef LIBUSB_BLOCKS
 	ret = usb_interrupt_read(keyboard_device, g15_keys_endpoint, (char*)buffer, read_length, timeout);
 #else
-	pthread_mutex_lock(&libusb_mutex);
-	ret = usb_interrupt_read(keyboard_device, g15_keys_endpoint, (char*)buffer, read_length , timeout);
-	pthread_mutex_unlock(&libusb_mutex);
+	if (pthread_mutex_lock(&libusb_mutex) == 0) {
+		ret = usb_interrupt_read(keyboard_device, g15_keys_endpoint, (char*)buffer, read_length , timeout);
+		pthread_mutex_unlock(&libusb_mutex);
+	}
+	else {
+		g15_log(stderr,G15_LOG_WARN,"%s : error locking mutex, this is fatal.\n", __func__);
+		return G15_ERROR_TRY_AGAIN;
+	}
 #endif
 
 	if (ret > 0 && libg15_debugging_enabled == G15_LOG_INFO) {
