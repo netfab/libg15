@@ -96,7 +96,7 @@ void libg15Debug(int option) {
 
 /* debugging wrapper */
 static int g15_log (FILE *fd, unsigned int level, const char *fmt, ...) {
-	if (libg15_debugging_enabled && libg15_debugging_enabled>=level) {
+	if ((level == G15_LOG_WARN ) || (libg15_debugging_enabled && libg15_debugging_enabled>=level)) {
 		fprintf(fd,"libg15: ");
 		va_list argp;
 		va_start (argp, fmt);
