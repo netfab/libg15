@@ -398,6 +398,46 @@ int re_initLibG15() {
 	return G15_NO_ERROR;
 }
 
+int handle_usb_errors(const char *prefix, int ret) {
+	switch (ret) {
+		case -ETIMEDOUT:
+			return G15_ERROR_READING_USB_DEVICE;  /* backward-compatibility */
+			break;
+		case -ENOSPC: /* the we dont have enough bandwidth, apparently.. something has to give here.. */
+			g15_log(stderr,G15_LOG_WARN,"usb error: ENOSPC.. reducing speed\n");
+			enospc_slowdown = 1;
+			break;
+		case -ENODEV: /* the device went away - we probably should attempt to reattach */
+		case -ENXIO: /* host controller bug */
+		case -EINVAL: /* invalid request */
+		case -EAGAIN: /* try again */
+		case -EFBIG: /* too many frames to handle */
+		case -EMSGSIZE: /* msgsize is invalid */
+			 g15_log(stderr,G15_LOG_WARN,"usb error: %s %s (%i)\n",prefix,usb_strerror(),ret);
+			 break;
+		case -EPIPE: /* endpoint is stalled */
+			g15_log(stderr,G15_LOG_WARN,"usb error: %s EPIPE! clearing...\n",prefix);
+			if (pthread_mutex_lock(&libusb_mutex) == 0) {
+				int retval = usb_clear_halt(keyboard_device, g15_keys_endpoint);
+				usleep(100);
+				if (retval < 0)
+					g15_log(stderr,G15_LOG_WARN,"fails to clear \"Extra Keys\" endpoint : (%d) %s\n", retval, usb_strerror());
+				retval = usb_clear_halt(keyboard_device, g15_lcd_endpoint);
+				usleep(100);
+				if (retval < 0)
+					g15_log(stderr,G15_LOG_WARN,"fails to clear \"LCD\" endpoint : (%d) %s\n", retval, usb_strerror());
+				pthread_mutex_unlock(&libusb_mutex);
+			}
+			else g15_log(stderr,G15_LOG_WARN,"%s : error locking mutex, this is fatal.\n", __func__);
+			break;
+		default: /* timed out */
+			 g15_log(stderr,G15_LOG_WARN,"Unknown usb error: %s !! (err is %i (%s))\n",prefix,ret,usb_strerror());
+			 break;
+	}
+
+	return ret;
+}
+
 static int sendControlRequest(const char *func, int value, int index, char *bytes, int size) {
 	int retval = -1;
 
@@ -414,8 +454,10 @@ static int sendControlRequest(const char *func, int value, int index, char *byte
 				);
 		pthread_mutex_unlock(&libusb_mutex);
 
-		if ( retval < 0 )
-			g15_log(stderr,G15_LOG_WARN,"%s : error sending message : %d\n", func, retval);
+		if ( retval < 0 ) {
+			g15_log(stderr,G15_LOG_WARN,"%s : error sending message : (%d) %s\n", func, retval, usb_strerror());
+			return handle_usb_errors(func, retval);
+		}
 		else {
 			if (retval == size) /* sanity check */
 				g15_log(stderr,G15_LOG_INFO,"%s : message sent : %d bytes\n", func, retval);
@@ -587,37 +629,6 @@ static void dumpPixmapIntoLCDFormat(unsigned char *lcd_buffer, unsigned char con
 		 */
 		base_offset += G15_LCD_WIDTH - (G15_LCD_WIDTH / 8);
 	}
-}
-
-int handle_usb_errors(const char *prefix, int ret) {
-
-	switch (ret) {
-		case -ETIMEDOUT:
-			return G15_ERROR_READING_USB_DEVICE;  /* backward-compatibility */
-			break;
-		case -ENOSPC: /* the we dont have enough bandwidth, apparently.. something has to give here.. */
-			g15_log(stderr,G15_LOG_WARN,"usb error: ENOSPC.. reducing speed\n");
-			enospc_slowdown = 1;
-			break;
-		case -ENODEV: /* the device went away - we probably should attempt to reattach */
-		case -ENXIO: /* host controller bug */
-		case -EINVAL: /* invalid request */
-		case -EAGAIN: /* try again */
-		case -EFBIG: /* too many frames to handle */
-		case -EMSGSIZE: /* msgsize is invalid */
-			 g15_log(stderr,G15_LOG_WARN,"usb error: %s %s (%i)\n",prefix,usb_strerror(),ret);
-			 break;
-		case -EPIPE: /* endpoint is stalled */
-			 g15_log(stderr,G15_LOG_WARN,"usb error: %s EPIPE! clearing...\n",prefix);
-			 pthread_mutex_lock(&libusb_mutex);
-			 usb_clear_halt(keyboard_device, 0x81);
-			 pthread_mutex_unlock(&libusb_mutex);
-			 break;
-		default: /* timed out */
-			 g15_log(stderr,G15_LOG_WARN,"Unknown usb error: %s !! (err is %i (%s))\n",prefix,ret,usb_strerror());
-			 break;
-	}
-	return ret;
 }
 
 static int handleWriteReturnValue(const char *prefix, int ret, int expected) {
