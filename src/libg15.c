@@ -620,6 +620,21 @@ int handle_usb_errors(const char *prefix, int ret) {
 	return ret;
 }
 
+static int handleWriteReturnValue(const char *prefix, int ret, int expected) {
+	if (ret < 0) {
+		handle_usb_errors(prefix, ret);
+		return G15_ERROR_WRITING_PIXMAP;
+	}
+	else {
+		if (ret != expected) {
+			g15_log(stderr, G15_LOG_WARN, "%s : bytes written : %d - expected : %d\n", prefix, ret, expected);
+			return G15_ERROR_WRITING_PIXMAP;
+		}
+	}
+
+	return G15_NO_ERROR;
+}
+
 int writePixmapToLCD(unsigned char const *data) {
 	int ret = 0;
 	int transfercount=0;
@@ -649,19 +664,26 @@ int writePixmapToLCD(unsigned char const *data) {
 
 	if (enospc_slowdown != 0) {
 #ifndef LIBUSB_BLOCKS
-		pthread_mutex_lock(&libusb_mutex);
+		if (pthread_mutex_lock(&libusb_mutex) == 0) {
 #endif
-		for (transfercount = 0;transfercount<=31;transfercount++) {
-			ret = usb_interrupt_write(keyboard_device, g15_lcd_endpoint, (char*)lcd_buffer+(32*transfercount), 32, 1000);
-			if (ret != 32)
-			{
-				handle_usb_errors ("LCDPixmap Slow Write",ret);
-				return G15_ERROR_WRITING_PIXMAP;
-			}
-			usleep(100);
-		}
+			for (transfercount = 0;transfercount<=31;transfercount++) {
+				ret = usb_interrupt_write(keyboard_device, g15_lcd_endpoint, (char*)lcd_buffer+(32*transfercount), 32, 1000);
+				usleep(100);
+				ret = handleWriteReturnValue("LCDPixmap Slow Write", ret, 32);
+				if (ret != G15_NO_ERROR) {
 #ifndef LIBUSB_BLOCKS
-		pthread_mutex_unlock(&libusb_mutex);
+					pthread_mutex_unlock(&libusb_mutex);
+#endif
+					return ret;
+				}
+			}
+#ifndef LIBUSB_BLOCKS
+			pthread_mutex_unlock(&libusb_mutex);
+		}
+		else {
+			g15_log(stderr,G15_LOG_WARN,"LCDPixmap Slow Write : error locking mutex, this is fatal.\n");
+			return G15_ERROR_WRITING_PIXMAP;
+		}
 #endif
 	}
 	else {
@@ -669,15 +691,18 @@ int writePixmapToLCD(unsigned char const *data) {
 #ifdef LIBUSB_BLOCKS
 		ret = usb_interrupt_write(keyboard_device, g15_lcd_endpoint, (char*)lcd_buffer, G15_BUFFER_LEN, 1000);
 #else
-		pthread_mutex_lock(&libusb_mutex);
-		ret = usb_interrupt_write(keyboard_device, g15_lcd_endpoint, (char*)lcd_buffer, G15_BUFFER_LEN, 1000);
-		pthread_mutex_unlock(&libusb_mutex);
-#endif
-		if (ret != G15_BUFFER_LEN) {
-			handle_usb_errors ("LCDPixmap Write",ret);
+		if (pthread_mutex_lock(&libusb_mutex) == 0) {
+			ret = usb_interrupt_write(keyboard_device, g15_lcd_endpoint, (char*)lcd_buffer, G15_BUFFER_LEN, 1000);
+			pthread_mutex_unlock(&libusb_mutex);
+		}
+		else {
+			g15_log(stderr,G15_LOG_WARN,"LCDPixmap Write : error locking mutex, this is fatal.\n");
 			return G15_ERROR_WRITING_PIXMAP;
 		}
+#endif
 		usleep(100);
+
+		return handleWriteReturnValue("LCDPixmap Write", ret, G15_BUFFER_LEN);
 	}
 
 	return 0;
