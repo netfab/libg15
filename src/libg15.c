@@ -184,6 +184,15 @@ static usb_dev_handle * findAndOpenDevice(libg15_devices_t handled_device, int d
 				for (j = 0; j<dev->descriptor.bNumConfigurations;j++) {
 					struct usb_config_descriptor *cfg = &dev->config[j];
 
+#if 0
+					g15_log(stderr, G15_LOG_DEBUG, "  wTotalLength:         %d\n", cfg->wTotalLength);
+					g15_log(stderr, G15_LOG_DEBUG, "  bNumInterfaces:       %d\n", cfg->bNumInterfaces);
+					g15_log(stderr, G15_LOG_DEBUG, "  bConfigurationValue:  %d\n", cfg->bConfigurationValue);
+					g15_log(stderr, G15_LOG_DEBUG, "  iConfiguration:       %d\n", cfg->iConfiguration);
+					g15_log(stderr, G15_LOG_DEBUG, "  bmAttributes:         %02xh\n", cfg->bmAttributes);
+					g15_log(stderr, G15_LOG_DEBUG, "  MaxPower:             %d\n", cfg->MaxPower);
+#endif
+
 					for (i=0;i<cfg->bNumInterfaces; i++) {
 						if (g15DeviceCapabilities() & G15_DEVICE_G510) {
 							if (i==G510_STANDARD_KEYBOARD_INTERFACE)
@@ -198,6 +207,17 @@ static usb_dev_handle * findAndOpenDevice(libg15_devices_t handled_device, int d
 
 						for (k=0;k<ifp->num_altsetting;k++) {
 							struct usb_interface_descriptor *as = &ifp->altsetting[k];
+
+#if 0
+							g15_log(stderr, G15_LOG_DEBUG, "    bInterfaceNumber:   %d\n", as->bInterfaceNumber);
+							g15_log(stderr, G15_LOG_DEBUG, "    bAlternateSetting:  %d\n", as->bAlternateSetting);
+							g15_log(stderr, G15_LOG_DEBUG, "    bNumEndpoints:      %d\n", as->bNumEndpoints);
+							g15_log(stderr, G15_LOG_DEBUG, "    bInterfaceClass:    %d\n", as->bInterfaceClass);
+							g15_log(stderr, G15_LOG_DEBUG, "    bInterfaceSubClass: %d\n", as->bInterfaceSubClass);
+							g15_log(stderr, G15_LOG_DEBUG, "    bInterfaceProtocol: %d\n", as->bInterfaceProtocol);
+							g15_log(stderr, G15_LOG_DEBUG, "    iInterface:         %d\n", as->iInterface);
+#endif
+
 							/* verify that the interface is for a HID device */
 							if (as->bInterfaceClass==USB_CLASS_HID) {
 								g15_log(stderr, G15_LOG_INFO, "Interface %i has %i Endpoints\n", i, as->bNumEndpoints);
@@ -256,10 +276,20 @@ static usb_dev_handle * findAndOpenDevice(libg15_devices_t handled_device, int d
 
 								for (l=0; l< as->bNumEndpoints;l++) {
 									struct usb_endpoint_descriptor *ep=&as->endpoint[l];
+
 									g15_log(stderr, G15_LOG_INFO, "Found %s endpoint %i with address 0x%X maxtransfersize=%i \n",
 											0x80&ep->bEndpointAddress?"\"Extra Keys\"":"\"LCD\"",
 											ep->bEndpointAddress&0x0f,ep->bEndpointAddress, ep->wMaxPacketSize
 											 );
+
+#if 0
+									g15_log(stderr, G15_LOG_DEBUG, "      bEndpointAddress: %02xh\n", ep->bEndpointAddress);
+									g15_log(stderr, G15_LOG_DEBUG, "      bmAttributes:     %02xh\n", ep->bmAttributes);
+									g15_log(stderr, G15_LOG_DEBUG, "      wMaxPacketSize:   %d\n", ep->wMaxPacketSize);
+									g15_log(stderr, G15_LOG_DEBUG, "      bInterval:        %d\n", ep->bInterval);
+									g15_log(stderr, G15_LOG_DEBUG, "      bRefresh:         %d\n", ep->bRefresh);
+									g15_log(stderr, G15_LOG_DEBUG, "      bSynchAddress:    %d\n", ep->bSynchAddress);
+#endif
 
 									if (0x80 & ep->bEndpointAddress) {
 										g15_keys_endpoint = ep->bEndpointAddress;
