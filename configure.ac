@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(libg15, 1.3.0.6, https://github.com/netfab/libg15/issues)
+AC_INIT(libg15, 1.3.1, https://github.com/netfab/libg15/issues)
 AC_PREFIX_DEFAULT(/usr)
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])

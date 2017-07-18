@@ -1,6 +1,14 @@
 
 See git log for full changelog.
 
+*** Version 1.3.1
+	* Makes exitLibG15() always return -1 in case of failure
+	* Properly close the usb device if something goes wrong
+		during initialization
+	* Make code stronger by checking return values
+	* Make warnings always printed
+	* Improve debug output
+
 *** Version 1.3.0.6
 	* Fix regression introduced in previous version
 
